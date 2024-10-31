@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Color Pairing Tool</title>
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			height: 100vh;
+			background-color: #f0f0f0;
+		}
+
+		#colorContainer {
+			display: flex;
+			width: 100%;
+			overflow-x: auto;
+		}
+
+		#addColorButton {
+			background: #89e889;
+			width: 25vw;
+			margin: 5px;
+			padding: 4px;
+			font-size: medium;
+			border-radius: 5px;
+		}
+
+		.colorBox {
+			width: 100px;
+			height: 500px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+			position: relative;
+		}
+
+		.colorBox input {
+			position: absolute;
+			top: 5px;
+			right: 5px;
+			width: 20px;
+			height: 20px;
+			opacity: 0;
+			cursor: pointer;
+		}
+
+		.deleteButton,
+		.duplicateButton {
+			position: absolute;
+			bottom: 5px;
+			background-color: red;
+			color: white;
+			border: none;
+			border-radius: 90px;
+			width: 20px;
+			height: 20px;
+			cursor: pointer;
+		}
+
+		.deleteButton {
+			right: 5px;
+		}
+
+		.duplicateButton {
+			left: 5px;
+			background-color: blue;
+		}
+
+		#colorArrayTextarea {
+			width: 80%;
+			height: 100px;
+			margin-bottom: 20px;
+		}
+	</style>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+</head>
+
+<body>
+	<div id="colorContainer"></div>
+	<input type="color" id="colorPicker" style="display:none;">
+	<button id="addColorButton">Add Color</button>
+	<textarea id="colorArrayTextarea"></textarea>
+
+	<script>
+		document.addEventListener('DOMContentLoaded', () => {
+			const colorContainer = document.getElementById('colorContainer');
+			const colorPicker = document.getElementById('colorPicker');
+			const addColorButton = document.getElementById('addColorButton');
+			const colorArrayTextarea = document.getElementById('colorArrayTextarea');
+
+			let colors = [
+				"#2377b4", "#ff800e", "#2da02c", "#d62829", "#9366bd", "#8b554a",
+				"#e479c3", "#7f7f7f", "#bbbc21", "#1dbfd1", "#ff0087", "#1cf1a3",
+				"#822cd3", "#aef815", "#fe16f4", "#20f53d", "#f29180", "#155126",
+				"#ecdfe3", "#acf3b1", "#79acfd"
+			];
+
+			addColorButton.addEventListener('click', () => {
+				const newColor = getRandomColor();
+				colors.push(newColor);
+				updateTextarea();
+				renderColors();
+			});
+
+			colorContainer.addEventListener('click', (event) => {
+				if (event.target.classList.contains('colorBox')) {
+					const index = event.target.dataset.index;
+					colorPicker.value = colors[index];
+					colorPicker.click();
+					colorPicker.oninput = () => {
+						colors[index] = colorPicker.value;
+						updateTextarea();
+						renderColors();
+					};
+				} else if (event.target.classList.contains('deleteButton')) {
+					const index = event.target.parentElement.dataset.index;
+					colors.splice(index, 1);
+					updateTextarea();
+					renderColors();
+				} else if (event.target.classList.contains('duplicateButton')) {
+					const index = event.target.parentElement.dataset.index;
+					const colorToDuplicate = colors[index];
+					colors.splice(index, 0, colorToDuplicate);
+					updateTextarea();
+					renderColors();
+				}
+			});
+
+			colorArrayTextarea.addEventListener('input', () => {
+				try {
+					colors = JSON.parse(colorArrayTextarea.value);
+					renderColors();
+				} catch (e) {
+					console.error('Invalid JSON');
+				}
+			});
+
+			function renderColors() {
+				colorContainer.innerHTML = '';
+				colors.forEach((color, index) => {
+					const colorBox = document.createElement('div');
+					colorBox.className = 'colorBox';
+					colorBox.style.backgroundColor = color;
+					colorBox.dataset.index = index;
+
+					const deleteButton = document.createElement('button');
+					deleteButton.className = 'deleteButton';
+					deleteButton.textContent = 'X';
+					colorBox.appendChild(deleteButton);
+
+					const duplicateButton = document.createElement('button');
+					duplicateButton.className = 'duplicateButton';
+					duplicateButton.textContent = 'D';
+					colorBox.appendChild(duplicateButton);
+
+					colorContainer.appendChild(colorBox);
+				});
+			}
+
+			function updateTextarea() {
+				let value = JSON.stringify(colors, null, 2);
+				value = value.replace(/(\r\n|\n|\r)/gm, "").replace(/\s/g, "");
+				colorArrayTextarea.value = value;
+			}
+
+			function getRandomColor() {
+				const letters = '0123456789ABCDEF';
+				let color = '#';
+				for (let i = 0; i < 6; i++) {
+					color += letters[Math.floor(Math.random() * 16)];
+				}
+				return color;
+			}
+
+			// Initial render
+			updateTextarea();
+			renderColors();
+
+			// Initialize Sortable
+			new Sortable(colorContainer, {
+				animation: 150,
+				onEnd: (evt) => {
+					const [movedItem] = colors.splice(evt.oldIndex, 1);
+					colors.splice(evt.newIndex, 0, movedItem);
+					updateTextarea();
+					renderColors();
+				}
+			});
+		});
+	</script>
+</body>
+
+</html>
